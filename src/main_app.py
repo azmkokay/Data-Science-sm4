@@ -42,7 +42,8 @@ while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
-    
+ 
+    frame = cv2.flip(frame, 1)
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(rgb)
     
