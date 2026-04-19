@@ -63,16 +63,16 @@ def process_dataset(folder):
     return np.array(X), np.array(y)
 
 print("Processing TRAIN...")
-X_train, y_train = process_dataset("data/train")
+X_train, y_train = process_dataset("dataset\\training_set")
 print("Processing TEST...")
-X_test, y_test = process_dataset("data/test")
+X_test, y_test = process_dataset("dataset\\testing_set")
 
 df_train = pd.DataFrame(X_train)
 df_train['label'] = y_train
-df_train.to_csv("data/train_features.csv", index=False)
+df_train.to_csv("dataset/train_features.csv", index=False)
 
 df_test = pd.DataFrame(X_test)
 df_test['label'] = y_test
-df_test.to_csv("data/test_features.csv", index=False)
+df_test.to_csv("dataset/test_features.csv", index=False)
 
 print("✅ Feature extraction selesai!")

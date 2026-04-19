@@ -1,8 +1,0 @@
-opencv-python
-mediapipe
-scikit-learn
-numpy
-pandas
-pillow
-joblib
-tqdm
