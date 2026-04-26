@@ -36,14 +36,15 @@ cap = cv2.VideoCapture(0)
 cap.set(3, 1280)
 cap.set(4, 720)
 
-print("🎥 Webcam aktif. Tekan 'Q' keluar | Tekan 'N' ganti frame kacamata")
+print("🎥 Webcam aktif. Tekan 'N' → frame berikut | 'B' → frame sebelumnya | 'Q' → keluar")
 
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
- 
-    frame = cv2.flip(frame, 1)
+
+    frame = cv2.flip(frame, 1)   # menghilangkan mirror
+    
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(rgb)
     
@@ -69,17 +70,26 @@ while cap.isOpened():
             cv2.putText(frame, f"Frame: {current_frame_name}", (20, 90),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
     
-    cv2.putText(frame, "Tekan N → ganti frame | Q → keluar", (20, frame.shape[0] - 20),
+    # Teks instruksi di bawah (sudah di-update)
+    cv2.putText(frame, "N → frame berikut | B → frame sebelumnya | Q → keluar", 
+                (20, frame.shape[0] - 20),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
     
     cv2.imshow("Virtual Glasses Try-On - Multi Frame", frame)
     
     key = cv2.waitKey(1) & 0xFF
+    
     if key == ord('q') or key == ord('Q'):
         break
+    
     if key == ord('n') or key == ord('N'):
         if current_shape and current_shape in current_indices:
             current_indices[current_shape] = (current_indices[current_shape] + 1) % len(frame_lists[current_shape])
+    
+    # === TOMBOL BARU: B untuk previous frame ===
+    if key == ord('b') or key == ord('B'):
+        if current_shape and current_shape in current_indices:
+            current_indices[current_shape] = (current_indices[current_shape] - 1) % len(frame_lists[current_shape])
 
 cap.release()
 cv2.destroyAllWindows()

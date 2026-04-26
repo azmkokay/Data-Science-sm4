@@ -2,17 +2,17 @@ import os
 import cv2
 import mediapipe as mp
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
+import pandas as pd
 
 mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, min_detection_confidence=0.5)
+face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, min_detection_confidence=0.7)
 
 def dist(p1, p2):
     return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
 def get_face_features(landmarks):
-    # Landmark indices MediaPipe Face Mesh
+    # Landmark indices MediaPipe Face Mesh (sama seperti kode lama Anda)
     points = {
         'forehead': landmarks[10],
         'chin': landmarks[152],
@@ -22,7 +22,9 @@ def get_face_features(landmarks):
         'right_jaw': landmarks[397],
         'left_eye_outer': landmarks[33],
         'right_eye_outer': landmarks[263],
-        'nose_tip': landmarks[1]
+        'nose_tip': landmarks[1],
+        'left_forehead': landmarks[54],
+        'right_forehead': landmarks[284]
     }
     
     h = dist(points['forehead'], points['chin'])
@@ -30,28 +32,33 @@ def get_face_features(landmarks):
     jaw_w = dist(points['left_jaw'], points['right_jaw'])
     eye_dist = dist(points['left_eye_outer'], points['right_eye_outer'])
     
+    # Fitur lebih lengkap & robust (dari kode lama + tambahan)
     features = [
-        h / w,                    # face ratio
-        jaw_w / w,                # jaw vs width
-        eye_dist / w,             # eye distance
+        h / w,                                      # face ratio
+        jaw_w / w,                                  # jaw vs width
+        eye_dist / w,                               # eye distance
         dist(points['left_cheek'], points['left_jaw']) / h,
         dist(points['right_cheek'], points['right_jaw']) / h,
         dist(points['forehead'], points['left_cheek']) / w,
         dist(points['forehead'], points['right_cheek']) / w,
-        dist(points['chin'], points['nose_tip']) / h
+        dist(points['chin'], points['nose_tip']) / h,
+        dist(points['left_forehead'], points['right_forehead']) / w,   # tambahan
+        jaw_w / h                                   # tambahan
     ]
     return features
 
-# Proses dataset
 def process_dataset(folder):
     X, y = [], []
     shapes = ['heart', 'oblong', 'oval', 'round', 'square']
     for shape in shapes:
         path = os.path.join(folder, shape)
+        if not os.path.exists(path):
+            continue
         for img_file in tqdm(os.listdir(path), desc=shape):
             img_path = os.path.join(path, img_file)
             image = cv2.imread(img_path)
-            if image is None: continue
+            if image is None: 
+                continue
             rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             results = face_mesh.process(rgb)
             if results.multi_face_landmarks:
@@ -60,19 +67,21 @@ def process_dataset(folder):
                 features = get_face_features(landmarks)
                 X.append(features)
                 y.append(shape)
-    return np.array(X), np.array(y)
+    return np.array(X, dtype=np.float32), np.array(y)
 
-print("Processing TRAIN...")
-X_train, y_train = process_dataset("dataset\\training_set")
-print("Processing TEST...")
-X_test, y_test = process_dataset("dataset\\testing_set")
+if __name__ == "__main__":
+    print("Processing TRAIN...")
+    X_train, y_train = process_dataset("dataset\\training_set")
+    print("Processing TEST...")
+    X_test, y_test = process_dataset("dataset\\testing_set")
 
-df_train = pd.DataFrame(X_train)
-df_train['label'] = y_train
-df_train.to_csv("dataset/train_features.csv", index=False)
+    # Simpan CSV (tetap sama seperti kode lama Anda)
+    df_train = pd.DataFrame(X_train)
+    df_train['label'] = y_train
+    df_train.to_csv("dataset/train_features.csv", index=False)
 
-df_test = pd.DataFrame(X_test)
-df_test['label'] = y_test
-df_test.to_csv("dataset/test_features.csv", index=False)
+    df_test = pd.DataFrame(X_test)
+    df_test['label'] = y_test
+    df_test.to_csv("dataset/test_features.csv", index=False)
 
-print("✅ Feature extraction selesai!")
+    print("✅ Feature extraction selesai! (10 fitur geometry + robust)")
